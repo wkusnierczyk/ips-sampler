@@ -8,8 +8,9 @@ from ips_generator.generator import IPSGenerator
 def main():
     parser = argparse.ArgumentParser(description="Generate synthetic IPS FHIR Bundles.")
 
+    # Arguments
     parser.add_argument(
-        "-s", "--samples", type=int, required=True, help="Number of samples to generate"
+        "-s", "--samples", type=int, help="Number of samples to generate"
     )
 
     parser.add_argument(
@@ -33,7 +34,24 @@ def main():
 
     parser.add_argument("--minify", action="store_true", help="Output minified JSON")
 
+    parser.add_argument(
+        "--about", action="store_true", help="Show tool information and exit"
+    )
+
     args = parser.parse_args()
+
+    # Handle --about
+    if args.about:
+        print("ips-generator: Synthetic International Patient Summary (IPS) Generator")
+        print("├─ version: 0.1.0")
+        print("├─ developer: mailto:waclaw.kusnierczyk@gmail.com")
+        print("├─ source: https://github.com/wkusnierczyk/ips-sampler")
+        print("└─ licence: MIT https://opensource.org/licenses/MIT")
+        sys.exit(0)
+
+    # Validate required args if --about is not present
+    if not args.samples:
+        parser.error("the following arguments are required: -s/--samples")
 
     if not os.path.exists(args.config):
         print(f"Error: Config file not found at {args.config}")

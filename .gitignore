@@ -1,6 +1,36 @@
+# --- Python Core ---
 __pycache__/
-*.pyc
-output/
-.DS_Store
+*.py[cod]
+*$py.class
 
+# --- Distribution & Build ---
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Testing & Quality ---
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# --- Environments ---
+.env
+.venv/
+venv/
+ENV/
+
+# --- IDE & OS ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# --- Project Specific ---
+output/
+
+# --- Bootstrap/Temporary ---
+# Ignore the script used to generate the project structure
 generator.py
+setup_project.py
