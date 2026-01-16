@@ -9,23 +9,17 @@ It provides essential, specialty-agnostic patient information—mainly medicatio
 
 ### Key Components and Purpose
 
-* **Core Data**  
-  Includes patient identification, medications, allergies, and a problem list as required elements.
-* **Optional Data**  
-  May include immunizations, procedures, medical devices, and diagnostic results.
-* **Standards**  
-  Built on ISO/EN 17269 and implemented using HL7 FHIR or CDA, often incorporating SNOMED CT.
-* **Goal**  
-  To enable clinicians to access crucial, actionable data during emergencies or when a patient travels, regardless of location. 
+* **Core Data** Includes patient identification, medications, allergies, and a problem list as required elements.
+* **Optional Data** May include immunizations, procedures, medical devices, and diagnostic results.
+* **Standards** Built on ISO/EN 17269 and implemented using HL7 FHIR or CDA, often incorporating SNOMED CT.
+* **Goal** To enable clinicians to access crucial, actionable data during emergencies or when a patient travels, regardless of location. 
 
 ### Usage and Implementation
 
-* **Use Case**  
-  Primary focus is on unplanned, emergency care, but useful for routine care transitions.
+* **Use Case** Primary focus is on unplanned, emergency care, but useful for routine care transitions.
 * **Global Adoption**:  
   Supported by initiatives like the Global Digital Health Partnership (GDHP) involving 30 countries and the WHO.
-* **Technology**  
-  Often integrated into Electronic Health Record (EHR) systems to facilitate data exchange, for example, through FHIR servers. 
+* **Technology** Often integrated into Electronic Health Record (EHR) systems to facilitate data exchange, for example, through FHIR servers. 
 
 ### References
 
@@ -41,40 +35,84 @@ It provides essential, specialty-agnostic patient information—mainly medicatio
 * [**Synthea Synthetic Patient Generation**](https://synthetichealth.github.io/synthea)  
   GitHub: [github.com/synthetichealth/synthea](https://github.com/synthetichealth/synthea)
 
-## Generator
+---
 
-A CLI tool and library for generating synthetic International Patient Summary (IPS) FHIR records.
+## Generator Tool (`ips-generator`)
+
+Included in this repository is `ips-generator`, a CLI tool and Python library for generating synthetic International Patient Summary (IPS) FHIR records.
 
 ### Features
 
-* **Separation of Concerns:** Logic is in `src/ips_gen`, CLI is `src/cli.py`.
-* **Configurable:** All clinical data is loaded from `config/ips_config.json`.
-* **Reproducible:** Supports `--seed` for deterministic generation.
+* **Separation of Concerns:** Logic is contained in the `ips_generator` package.
+* **Configurable:** Clinical data (conditions, medications) is loaded from `config/ips_config.json`.
+* **Reproducible:** Supports deterministic generation via the `--seed` flag.
+* **Standards Compliant:** Generates FHIR R4 Bundles (document type) suitable for IPS testing.
+
+### Installation
+
+To install the tool and its development dependencies locally:
+
+```bash
+make install
+```
+
+This installs the package in "editable" mode, meaning changes to the source code are immediately reflected in the installed command.
 
 ### Usage
 
-**Command Line**
+#### Command Line Interface (CLI)
+
+Once installed, use the `ips-generator` command:
 
 ```bash
-# Generate 50 records
-python src/cli.py --samples 50
+# Generate 50 records to the default 'output/' directory
+ips-generator --samples 50
 
-# Generate 10 records to a specific folder with a seed
-python src/cli.py -s 10 -o ./my_data --seed 12345
+# Generate 10 records to a specific folder with a specific seed (reproducible)
+ips-generator --samples 10 --output-dir ./my_data --seed 12345
+
+# Generate minified JSON (no indentation) for smaller file sizes
+ips-generator -s 100 --minify
+
+# View tool information
+ips-generator --about
 ```
 
-**Library (Python)**
+#### Python Library
+
+You can also use the generator programmatically in your own Python scripts:
 
 ```python
-from ips_gen.generator import IPSGenerator
+from ips_generator.generator import IPSGenerator
 
+# Initialize with the path to your config file
 gen = IPSGenerator("config/ips_config.json")
+
+# Generate a batch of bundles
 for bundle in gen.generate_batch(count=5):
-    print(bundle['id'])
+    print(f"Generated IPS Bundle ID: {bundle['id']}")
 ```
 
-### Testing
-Run the test suite:
+---
+
+## Development & Makefile Targets
+
+This project uses a `Makefile` to automate common development tasks.
+
+| Target | Command | Description |
+| :--- | :--- | :--- |
+| **`install`** | `make install` | Installs the package in editable mode (`pip install -e .[dev]`) with all development dependencies (black, flake8, mypy, pytest). |
+| **`format`** | `make format` | formats the code automatically using **Black**. |
+| **`lint`** | `make lint` | Checks code style and logical errors using **Flake8**. |
+| **`type-check`** | `make type-check` | Performs static type analysis using **Mypy**. |
+| **`test`** | `make test` | Runs the unit test suite using Python's `unittest` module. |
+| **`dist`** | `make dist` | Builds distribution artifacts (Source Archive and Wheel) in the `dist/` directory. |
+| **`clean`** | `make clean` | Removes build artifacts, cached files (`__pycache__`), output data, and temporary directories. |
+| **`all`** | `make all` | Runs `install`, `type-check`, and `test` in sequence. |
+
+### Running Tests
+
+To ensure the generator is working correctly:
 
 ```bash
 make test
