@@ -1,38 +1,44 @@
 import uuid
 from datetime import datetime, timedelta
 import random
+from typing import Any, Dict, List, Optional
+
+# Type alias for clarity
+FHIRResource = Dict[str, Any]
 
 
 class IPSBuilder:
     """
     Fluent API Builder for a single IPS FHIR Bundle.
+
+    Attributes:
+        config (dict): The configuration dictionary containing clinical data.
+        rng (random.Random): Seeded random number generator.
     """
 
-    def __init__(self, data_config, seed=None):
+    def __init__(self, data_config: Dict[str, Any], seed: Optional[int] = None):
         self.config = data_config
         self.rng = random.Random(seed) if seed is not None else random.Random()
 
         # Internal state
         self.patient_id = self._generate_uuid()
         self.practitioner_id = self._generate_uuid()
-        self.resources = []
-        self.sections = []
+        self.resources: List[FHIRResource] = []
+        self.sections: List[Dict[str, Any]] = []
         self._init_core_resources()
 
-    def _generate_uuid(self):
-        """
-        Generates a UUID based on the seeded RNG.
-        """
+    def _generate_uuid(self) -> str:
+        """Generates a reproducible UUID based on the seeded RNG."""
         return str(uuid.UUID(int=self.rng.getrandbits(128)))
 
-    def _init_core_resources(self):
+    def _init_core_resources(self) -> "IPSBuilder":
         fam = self.rng.choice(self.config["demographics"]["family_names"])
         giv = self.rng.choice(self.config["demographics"]["given_names"])
 
         birth_days_ago = self.rng.randint(7000, 30000)
         birth_date = datetime.now() - timedelta(days=birth_days_ago)
 
-        patient = {
+        patient: FHIRResource = {
             "resourceType": "Patient",
             "id": self.patient_id,
             "active": True,
@@ -41,7 +47,7 @@ class IPSBuilder:
             "birthDate": birth_date.strftime("%Y-%m-%d"),
         }
 
-        practitioner = {
+        practitioner: FHIRResource = {
             "resourceType": "Practitioner",
             "id": self.practitioner_id,
             "name": [{"family": "Doctor", "given": ["Family"]}],
@@ -50,11 +56,11 @@ class IPSBuilder:
         self.resources.extend([patient, practitioner])
         return self
 
-    def add_condition(self):
+    def add_condition(self) -> "IPSBuilder":
         cond_def = self.rng.choice(self.config["clinical_data"]["conditions"])
         res_id = self._generate_uuid()
 
-        condition = {
+        condition: FHIRResource = {
             "resourceType": "Condition",
             "id": res_id,
             "clinicalStatus": {
@@ -86,11 +92,11 @@ class IPSBuilder:
         )
         return self
 
-    def add_medication(self):
+    def add_medication(self) -> "IPSBuilder":
         med_def = self.rng.choice(self.config["clinical_data"]["medications"])
         res_id = self._generate_uuid()
 
-        med_stmt = {
+        med_stmt: FHIRResource = {
             "resourceType": "MedicationStatement",
             "id": res_id,
             "status": "active",
@@ -115,11 +121,11 @@ class IPSBuilder:
         )
         return self
 
-    def add_allergy(self):
+    def add_allergy(self) -> "IPSBuilder":
         alg_def = self.rng.choice(self.config["clinical_data"]["allergies"])
         res_id = self._generate_uuid()
 
-        allergy = {
+        allergy: FHIRResource = {
             "resourceType": "AllergyIntolerance",
             "id": res_id,
             "code": {
@@ -142,7 +148,7 @@ class IPSBuilder:
         )
         return self
 
-    def _ensure_section(self, title, code, reference):
+    def _ensure_section(self, title: str, code: str, reference: str) -> None:
         for sec in self.sections:
             if sec["code"]["coding"][0]["code"] == code:
                 sec["entry"].append({"reference": reference})
@@ -155,9 +161,9 @@ class IPSBuilder:
         }
         self.sections.append(new_section)
 
-    def build(self):
+    def build(self) -> FHIRResource:
         loinc = self.config["terminologies"]["loinc"]
-        composition = {
+        composition: FHIRResource = {
             "resourceType": "Composition",
             "id": self._generate_uuid(),
             "status": "final",

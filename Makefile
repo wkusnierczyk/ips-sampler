@@ -1,8 +1,8 @@
 PYTHON=python3
 
-.PHONY: all clean install format lint test dist
+.PHONY: all clean install format lint type-check test dist
 
-all: install test
+all: install type-check test
 
 install:
 	$(PYTHON) -m pip install -e .[dev]
@@ -13,7 +13,10 @@ format:
 lint:
 	flake8 src tests
 
-# PYTHONPATH=src ensures tests run even if package isn't installed in env
+# Static type checking
+type-check:
+	mypy src
+
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover tests
 
@@ -28,3 +31,4 @@ clean:
 	rm -rf *.egg-info
 	rm -rf src/ips_generator/__pycache__
 	rm -rf tests/__pycache__
+	rm -rf .mypy_cache

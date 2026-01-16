@@ -2,10 +2,17 @@ import argparse
 import sys
 import json
 import os
+import logging
+from typing import Optional
 from ips_generator.generator import IPSGenerator
+from ips_generator import __version__
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger("ips-generator")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate synthetic IPS FHIR Bundles.")
 
     # Arguments
@@ -43,36 +50,38 @@ def main():
     # Handle --about
     if args.about:
         print("ips-generator: Synthetic International Patient Summary (IPS) Generator")
-        print("├─ version: 0.1.0")
+        print(f"├─ version: {__version__}")
         print("├─ developer: mailto:waclaw.kusnierczyk@gmail.com")
         print("├─ source: https://github.com/wkusnierczyk/ips-sampler")
         print("└─ licence: MIT https://opensource.org/licenses/MIT")
         sys.exit(0)
 
-    # Validate required args if --about is not present
+    # Validate required args
     if not args.samples:
         parser.error("the following arguments are required: -s/--samples")
 
     if not os.path.exists(args.config):
-        print(f"Error: Config file not found at {args.config}")
+        logger.error(f"Config file not found at {args.config}")
         sys.exit(1)
 
     os.makedirs(args.output_dir, exist_ok=True)
 
     try:
         gen = IPSGenerator(args.config)
-        print(f"Generating {args.samples} records...")
+        logger.info(f"Generating {args.samples} records...")
 
         for i, bundle in enumerate(gen.generate_batch(args.samples, args.seed)):
             filename = os.path.join(args.output_dir, f"ips_record_{i:04d}.json")
             with open(filename, "w") as f:
-                indent = None if args.minify else 2
+                indent: Optional[int] = None if args.minify else 2
                 json.dump(bundle, f, indent=indent)
 
-        print(f"Successfully generated {args.samples} files " f"in '{args.output_dir}'")
+        logger.info(
+            f"Successfully generated {args.samples} files " f"in '{args.output_dir}'"
+        )
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    except Exception:
+        logger.exception("An unexpected error occurred")
         sys.exit(1)
 
 

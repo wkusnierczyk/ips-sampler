@@ -14,6 +14,7 @@ dependencies = []
 dev = [
     "black",
     "flake8",
+    "mypy",
     "pytest"
 ]
 
@@ -22,3 +23,8 @@ ips-generator = "ips_generator.cli:main"
 
 [tool.setuptools.package-data]
 ips_generator = ["py.typed"]
+
+[tool.mypy]
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = true
