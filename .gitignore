@@ -32,5 +32,4 @@ output/
 
 # --- Bootstrap/Temporary ---
 # Ignore the script used to generate the project structure
-generator.py
 setup_project.py
