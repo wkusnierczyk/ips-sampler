@@ -1,5 +1,8 @@
 import json
-from typing import Any, Dict, Iterator, Optional
+import random
+import uuid
+from datetime import datetime, timedelta
+from typing import Any, Dict, Iterator, Optional, Tuple
 from .builder import IPSBuilder
 
 
@@ -9,46 +12,80 @@ class IPSGenerator:
             self.config: Dict[str, Any] = json.load(f)
 
     def generate_batch(
-        self, count: int, seed: Optional[int] = None
-    ) -> Iterator[Dict[str, Any]]:
-        for i in range(count):
-            record_seed = seed + i if seed is not None else None
-            builder = IPSBuilder(self.config, seed=record_seed)
+        self, patient_count: int, repeats: int = 1, seed: Optional[int] = None
+    ) -> Iterator[Tuple[Dict[str, Any], int, int]]:
+        """
+        Generates batches of IPS records.
 
-            rng = builder.rng
+        Args:
+            patient_count: Number of unique patients to simulate.
+            repeats: Number of records to generate per patient.
+            seed: Base random seed.
 
-            # --- Randomly populate sections to create varied histories ---
+        Yields:
+            Tuple containing:
+            - The FHIR Bundle (dict)
+            - Patient Index (int)
+            - Record Index (int)
+        """
 
-            # 1. Conditions (50% chance for 1-3 conditions)
-            if rng.random() > 0.2:
-                for _ in range(rng.randint(1, 3)):
-                    builder.add_condition()
+        base_rng = random.Random(seed) if seed is not None else random.Random()
 
-            # 2. Medications (Matches conditions mostly)
-            if rng.random() > 0.2:
-                for _ in range(rng.randint(1, 3)):
-                    builder.add_medication()
+        for p_idx in range(patient_count):
+            # 1. Establish Patient Identity (persists across repeats)
+            # We generate specific attributes here to pass to the builder
+            pat_seed = base_rng.randint(0, 2**32)
+            pat_rng = random.Random(pat_seed)
 
-            # 3. Allergies (30% chance)
-            if rng.random() > 0.7:
-                builder.add_allergy()
+            # Helper to pick random date
+            def rand_date(rng, start, end):
+                return (
+                    datetime.now() - timedelta(days=rng.randint(start, end))
+                ).strftime("%Y-%m-%d")
 
-            # 4. Immunizations (80% chance for 1-4 shots)
-            if rng.random() > 0.2:
-                for _ in range(rng.randint(1, 4)):
-                    builder.add_immunization()
+            patient_context = {
+                "id": str(uuid.UUID(int=pat_rng.getrandbits(128))),
+                "family": pat_rng.choice(self.config["demographics"]["family_names"]),
+                "given": pat_rng.choice(self.config["demographics"]["given_names"]),
+                "birthDate": rand_date(pat_rng, 7000, 30000),
+                "gender": pat_rng.choice(["male", "female", "other", "unknown"]),
+            }
 
-            # 5. Procedures (40% chance)
-            if rng.random() > 0.6:
-                builder.add_procedure()
+            # 2. Generate Records for this Patient
+            for r_idx in range(repeats):
+                # Unique seed for this specific record instance
+                record_seed = base_rng.randint(0, 2**32)
 
-            # 6. Medical Devices (10% chance)
-            if rng.random() > 0.9:
-                builder.add_medical_device()
+                builder = IPSBuilder(
+                    self.config, seed=record_seed, patient_context=patient_context
+                )
 
-            # 7. Lab Results (70% chance for 1-3 results)
-            if rng.random() > 0.3:
-                for _ in range(rng.randint(1, 3)):
-                    builder.add_lab_result()
+                rng = builder.rng
 
-            yield builder.build()
+                # --- Randomly populate sections ---
+                if rng.random() > 0.2:
+                    for _ in range(rng.randint(1, 3)):
+                        builder.add_condition()
+
+                if rng.random() > 0.2:
+                    for _ in range(rng.randint(1, 3)):
+                        builder.add_medication()
+
+                if rng.random() > 0.7:
+                    builder.add_allergy()
+
+                if rng.random() > 0.2:
+                    for _ in range(rng.randint(1, 4)):
+                        builder.add_immunization()
+
+                if rng.random() > 0.6:
+                    builder.add_procedure()
+
+                if rng.random() > 0.9:
+                    builder.add_medical_device()
+
+                if rng.random() > 0.3:
+                    for _ in range(rng.randint(1, 3)):
+                        builder.add_lab_result()
+
+                yield builder.build(), p_idx, r_idx

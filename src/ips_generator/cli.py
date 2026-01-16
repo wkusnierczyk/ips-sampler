@@ -20,7 +20,15 @@ def main() -> None:
 
     # Arguments
     parser.add_argument(
-        "-s", "--samples", type=int, help="Number of samples to generate"
+        "-p", "--patients", type=int, help="Number of unique patients to generate"
+    )
+
+    parser.add_argument(
+        "-r",
+        "--repeats",
+        type=int,
+        default=1,
+        help="Number of records to generate per patient (default: 1)",
     )
 
     parser.add_argument(
@@ -61,15 +69,15 @@ def main() -> None:
         print(
             "ips-generator: Synthetic International " "Patient Summary (IPS) Generator"
         )
-        print(f"├─ version:   {__version__}")
+        print(f"├─ version: {__version__}")
         print("├─ developer: mailto:waclaw.kusnierczyk@gmail.com")
-        print("├─ source:    https://github.com/wkusnierczyk/ips-sampler")
-        print("└─ licence:   MIT https://opensource.org/licenses/MIT")
+        print("├─ source: https://github.com/wkusnierczyk/ips-sampler")
+        print("└─ licence: MIT https://opensource.org/licenses/MIT")
         sys.exit(0)
 
     # Validate required args
-    if not args.samples:
-        parser.error("the following arguments are required: -s/--samples")
+    if not args.patients:
+        parser.error("the following arguments are required: -p/--patients")
 
     if not os.path.exists(args.config):
         logger.error(f"Config file not found at {args.config}")
@@ -81,11 +89,19 @@ def main() -> None:
         gen = IPSGenerator(args.config)
         renderer = IPSPDFRenderer() if args.pdf else None
 
-        logger.info(f"Generating {args.samples} records...")
+        total_files = args.patients * args.repeats
+        logger.info(
+            f"Generating {total_files} records "
+            f"({args.patients} patients x {args.repeats} repeats)..."
+        )
 
-        for i, bundle in enumerate(gen.generate_batch(args.samples, args.seed)):
+        for bundle, p_idx, r_idx in gen.generate_batch(
+            args.patients, args.repeats, args.seed
+        ):
+            # Filename structure: patient_XXX_record_YY.json
+            base_filename = f"patient_{p_idx:03d}_record_{r_idx:02d}"
+
             # 1. Save JSON
-            base_filename = f"ips_record_{i:04d}"
             json_path = os.path.join(args.output_dir, f"{base_filename}.json")
             with open(json_path, "w") as f:
                 indent: Optional[int] = None if args.minify else 2
@@ -96,9 +112,7 @@ def main() -> None:
                 pdf_path = os.path.join(args.output_dir, f"{base_filename}.pdf")
                 renderer.render_to_file(bundle, pdf_path)
 
-        logger.info(
-            f"Successfully generated {args.samples} files " f"in '{args.output_dir}'"
-        )
+        logger.info(f"Successfully generated files in '{args.output_dir}'")
 
     except Exception:
         logger.exception("An unexpected error occurred")

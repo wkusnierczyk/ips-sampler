@@ -13,13 +13,23 @@ class IPSBuilder:
     Handles the creation of core and optional IPS sections.
     """
 
-    def __init__(self, data_config: Dict[str, Any], seed: Optional[int] = None):
+    def __init__(
+        self,
+        data_config: Dict[str, Any],
+        seed: Optional[int] = None,
+        patient_context: Optional[Dict[str, Any]] = None,
+    ):
         self.config = data_config
         self.rng = random.Random(seed) if seed is not None else random.Random()
+        self.patient_context = patient_context
 
         # Internal state
-        self.patient_id = self._generate_uuid()
+        self.patient_id = (
+            patient_context["id"] if patient_context else self._generate_uuid()
+        )
+        # Practitioner is usually different per record/author, so we regen it
         self.practitioner_id = self._generate_uuid()
+
         self.resources: List[FHIRResource] = []
         self.sections: List[Dict[str, Any]] = []
         self._init_core_resources()
@@ -34,19 +44,34 @@ class IPSBuilder:
         return (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
 
     def _init_core_resources(self) -> "IPSBuilder":
-        fam = self.rng.choice(self.config["demographics"]["family_names"])
-        giv = self.rng.choice(self.config["demographics"]["given_names"])
-        birth_date = self._random_date(7000, 30000)
+        # 1. Determine Patient Data (Reuse context if provided, else generate)
+        if self.patient_context:
+            pat_data = self.patient_context
+        else:
+            fam = self.rng.choice(self.config["demographics"]["family_names"])
+            giv = self.rng.choice(self.config["demographics"]["given_names"])
+            birth_date = self._random_date(7000, 30000)
+            gender = self.rng.choice(["male", "female", "other", "unknown"])
 
+            pat_data = {
+                "id": self.patient_id,
+                "family": fam,
+                "given": giv,
+                "birthDate": birth_date,
+                "gender": gender,
+            }
+
+        # 2. Build Patient Resource
         patient: FHIRResource = {
             "resourceType": "Patient",
-            "id": self.patient_id,
+            "id": pat_data["id"],
             "active": True,
-            "name": [{"family": fam, "given": [giv]}],
-            "gender": self.rng.choice(["male", "female", "other", "unknown"]),
-            "birthDate": birth_date,
+            "name": [{"family": pat_data["family"], "given": [pat_data["given"]]}],
+            "gender": pat_data["gender"],
+            "birthDate": pat_data["birthDate"],
         }
 
+        # 3. Build Practitioner Resource
         practitioner: FHIRResource = {
             "resourceType": "Practitioner",
             "id": self.practitioner_id,
@@ -244,9 +269,6 @@ class IPSBuilder:
             "patient": {"reference": f"Patient/{self.patient_id}"},
         }
 
-        # Note: In IPS, Devices are often referenced via DeviceUseStatement,
-        # but pure Device resources are also found in implementations.
-        # For simplicity, we reference the Device directly here.
         self.resources.append(device)
         self._ensure_section(
             "Medical Devices",
