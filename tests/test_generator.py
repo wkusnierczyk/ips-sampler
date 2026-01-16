@@ -2,7 +2,10 @@ import unittest
 import os
 from ips_sampler.generator import IPSGenerator
 
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config", "ips_config.json")
+CONFIG_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "config", "ips_config.json"
+)
+
 
 class TestIPSGenerator(unittest.TestCase):
     def setUp(self):
@@ -25,10 +28,13 @@ class TestIPSGenerator(unittest.TestCase):
         seed = 42
         run_a = list(self.generator.generate_batch(1, seed=seed))[0]
         run_b = list(self.generator.generate_batch(1, seed=seed))[0]
-        
-        # This will now PASS because UUIDs are derived from the seed
+
         self.assertEqual(run_a["id"], run_b["id"])
-        self.assertEqual(run_a["entry"][1]["resource"]["id"], run_b["entry"][1]["resource"]["id"])
+        self.assertEqual(
+            run_a["entry"][1]["resource"]["id"],
+            run_b["entry"][1]["resource"]["id"]
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
