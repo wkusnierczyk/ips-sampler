@@ -1,0 +1,14 @@
+flowchart TD
+    A[IPS Generator Script] -->|init| B[FHIR Templates]
+    B -->|load| C["Terminologies (LOINC/SNOMED)"]
+    A -->|randomize| D[Patient Data]
+    D -->|assemble| E["FHIR Bundle (Document)"]
+    E -->|link| F[Composition Resource]
+    F -->|references| G[Clinical Resources]
+    G -.-> H[AllergyIntolerance]
+    G -.-> I[MedicationStatement]
+    G -.-> J[Condition]
+    E -->|write| K[output/*.json]
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style E fill:#ccf,stroke:#333,stroke-width:2px
