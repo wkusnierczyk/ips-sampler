@@ -47,6 +47,7 @@ Included in this repository is `ips-generator`, a CLI tool and Python library fo
 * **Configurable:** Clinical data (conditions, medications) is loaded from `config/ips_config.json`.
 * **Reproducible:** Supports deterministic generation via the `--seed` flag.
 * **Standards Compliant:** Generates FHIR R4 Bundles (document type) suitable for IPS testing.
+* **PDF Rendering:** Option to generate human-readable PDF documents alongside the JSON data.
 
 ### Installation
 
@@ -67,6 +68,9 @@ Once installed, use the `ips-generator` command:
 ```bash
 # Generate 50 records to the default 'output/' directory
 ips-generator --samples 50
+
+# Generate 10 records with PDF counterparts
+ips-generator --samples 10 --pdf
 
 # Generate 10 records to a specific folder with a specific seed (reproducible)
 ips-generator --samples 10 --output-dir ./my_data --seed 12345
@@ -101,12 +105,11 @@ This project uses a `Makefile` to automate common development tasks.
 
 | Target | Command | Description |
 | :--- | :--- | :--- |
-| **`install`** | `make install` | Installs the package in editable mode (`pip install -e .[dev]`) with all development dependencies (black, flake8, mypy, pytest). |
+| **`install`** | `make install` | Installs the package in editable mode (`pip install -e .[dev]`) with all development dependencies (black, flake8, mypy, pytest, reportlab). |
 | **`format`** | `make format` | formats the code automatically using **Black**. |
 | **`lint`** | `make lint` | Checks code style and logical errors using **Flake8**. |
 | **`type-check`** | `make type-check` | Performs static type analysis using **Mypy**. |
 | **`test`** | `make test` | Runs the unit test suite using Python's `unittest` module. |
-| **`docs`** | `make docs` | Generates HTML documentation using **pdoc** in the `docs/` directory. |
 | **`dist`** | `make dist` | Builds distribution artifacts (Source Archive and Wheel) in the `dist/` directory. |
 | **`clean`** | `make clean` | Removes build artifacts, cached files (`__pycache__`), output data, and temporary directories. |
 | **`all`** | `make all` | Runs `install`, `type-check`, and `test` in sequence. |

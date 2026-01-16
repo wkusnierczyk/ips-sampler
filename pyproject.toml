@@ -8,15 +8,16 @@ description = "Synthetic International Patient Summary (IPS) Generator"
 readme = "README.md"
 requires-python = ">=3.8"
 dynamic = ["version"]
-dependencies = []
+dependencies = [
+    "reportlab>=4.0.0"
+]
 
 [project.optional-dependencies]
 dev = [
     "black",
     "flake8",
     "mypy",
-    "pytest",
-    "pdoc"
+    "pytest"
 ]
 
 [project.scripts]
