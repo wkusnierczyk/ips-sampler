@@ -1,6 +1,6 @@
 import unittest
 import os
-from ips_sampler.generator import IPSGenerator
+from ips_generator.generator import IPSGenerator
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config", "ips_config.json")
 

@@ -2,7 +2,7 @@ import argparse
 import sys
 import json
 import os
-from ips_sampler.generator import IPSGenerator
+from ips_generator.generator import IPSGenerator
 
 
 def main():

@@ -22,7 +22,6 @@ class IPSBuilder:
     def _generate_uuid(self):
         """
         Generates a UUID based on the seeded RNG.
-        This ensures test reproducibility unlike standard uuid.uuid4().
         """
         return str(uuid.UUID(int=self.rng.getrandbits(128)))
 
@@ -172,7 +171,6 @@ class IPSBuilder:
             "section": self.sections,
         }
 
-        # Composition must be first
         all_entries = [{"resource": composition}]
         all_entries += [{"resource": r} for r in self.resources]
 
