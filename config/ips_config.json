@@ -1,0 +1,32 @@
+{
+  "terminologies": {
+    "loinc": {
+      "allergies": "48765-2",
+      "medications": "10160-0",
+      "problems": "11450-4",
+      "doc_type": "60591-5"
+    }
+  },
+  "demographics": {
+    "family_names": ["Smith", "Garcia", "Kim", "Muller", "Rossi", "Ivanov", "Dubois", "Sato"],
+    "given_names": ["James", "Maria", "Wei", "Anna", "Luca", "Olga", "Hiroshi", "Claire"]
+  },
+  "clinical_data": {
+    "conditions": [
+      {"code": "38341003", "display": "Hypertension", "system": "http://snomed.info/sct"},
+      {"code": "73211009", "display": "Diabetes mellitus", "system": "http://snomed.info/sct"},
+      {"code": "195967001", "display": "Asthma", "system": "http://snomed.info/sct"},
+      {"code": "22298006", "display": "Myocardial infarction", "system": "http://snomed.info/sct"}
+    ],
+    "medications": [
+      {"code": "319864", "display": "Hydrochlorothiazide 25 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"},
+      {"code": "197361", "display": "Amlodipine 5 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"},
+      {"code": "860975", "display": "Metformin 500 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"}
+    ],
+    "allergies": [
+      {"code": "91936005", "display": "Penicillin allergy", "system": "http://snomed.info/sct"},
+      {"code": "300916003", "display": "Latex allergy", "system": "http://snomed.info/sct"},
+      {"code": "293637006", "display": "Peanut allergy", "system": "http://snomed.info/sct"}
+    ]
+  }
+}
