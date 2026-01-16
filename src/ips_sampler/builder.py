@@ -7,6 +7,7 @@ class IPSBuilder:
     """
     Fluent API Builder for a single IPS FHIR Bundle.
     """
+
     def __init__(self, data_config, seed=None):
         self.config = data_config
         self.rng = random.Random(seed) if seed is not None else random.Random()
@@ -38,13 +39,13 @@ class IPSBuilder:
             "active": True,
             "name": [{"family": fam, "given": [giv]}],
             "gender": self.rng.choice(["male", "female", "other", "unknown"]),
-            "birthDate": birth_date.strftime("%Y-%m-%d")
+            "birthDate": birth_date.strftime("%Y-%m-%d"),
         }
 
         practitioner = {
             "resourceType": "Practitioner",
             "id": self.practitioner_id,
-            "name": [{"family": "Doctor", "given": ["Family"]}]
+            "name": [{"family": "Doctor", "given": ["Family"]}],
         }
 
         self.resources.extend([patient, practitioner])
@@ -58,27 +59,31 @@ class IPSBuilder:
             "resourceType": "Condition",
             "id": res_id,
             "clinicalStatus": {
-                "coding": [{
-                    "system": "http://terminology.hl7.org/CodeSystem/"
-                              "condition-clinical",
-                    "code": "active"
-                }]
+                "coding": [
+                    {
+                        "system": "http://terminology.hl7.org/CodeSystem/"
+                        "condition-clinical",
+                        "code": "active",
+                    }
+                ]
             },
             "code": {
-                "coding": [{
-                    "system": cond_def["system"],
-                    "code": cond_def["code"],
-                    "display": cond_def["display"]
-                }]
+                "coding": [
+                    {
+                        "system": cond_def["system"],
+                        "code": cond_def["code"],
+                        "display": cond_def["display"],
+                    }
+                ]
             },
-            "subject": {"reference": f"Patient/{self.patient_id}"}
+            "subject": {"reference": f"Patient/{self.patient_id}"},
         }
 
         self.resources.append(condition)
         self._ensure_section(
             "Problem List",
             self.config["terminologies"]["loinc"]["problems"],
-            f"Condition/{res_id}"
+            f"Condition/{res_id}",
         )
         return self
 
@@ -91,21 +96,23 @@ class IPSBuilder:
             "id": res_id,
             "status": "active",
             "medicationCodeableConcept": {
-                "coding": [{
-                    "system": med_def["system"],
-                    "code": med_def["code"],
-                    "display": med_def["display"]
-                }]
+                "coding": [
+                    {
+                        "system": med_def["system"],
+                        "code": med_def["code"],
+                        "display": med_def["display"],
+                    }
+                ]
             },
             "subject": {"reference": f"Patient/{self.patient_id}"},
-            "effectiveDateTime": datetime.now().strftime("%Y-%m-%d")
+            "effectiveDateTime": datetime.now().strftime("%Y-%m-%d"),
         }
 
         self.resources.append(med_stmt)
         self._ensure_section(
             "Medication Summary",
             self.config["terminologies"]["loinc"]["medications"],
-            f"MedicationStatement/{res_id}"
+            f"MedicationStatement/{res_id}",
         )
         return self
 
@@ -117,20 +124,22 @@ class IPSBuilder:
             "resourceType": "AllergyIntolerance",
             "id": res_id,
             "code": {
-                "coding": [{
-                    "system": alg_def["system"],
-                    "code": alg_def["code"],
-                    "display": alg_def["display"]
-                }]
+                "coding": [
+                    {
+                        "system": alg_def["system"],
+                        "code": alg_def["code"],
+                        "display": alg_def["display"],
+                    }
+                ]
             },
-            "patient": {"reference": f"Patient/{self.patient_id}"}
+            "patient": {"reference": f"Patient/{self.patient_id}"},
         }
 
         self.resources.append(allergy)
         self._ensure_section(
             "Allergies",
             self.config["terminologies"]["loinc"]["allergies"],
-            f"AllergyIntolerance/{res_id}"
+            f"AllergyIntolerance/{res_id}",
         )
         return self
 
@@ -143,7 +152,7 @@ class IPSBuilder:
         new_section = {
             "title": title,
             "code": {"coding": [{"system": "http://loinc.org", "code": code}]},
-            "entry": [{"reference": reference}]
+            "entry": [{"reference": reference}],
         }
         self.sections.append(new_section)
 
@@ -154,16 +163,13 @@ class IPSBuilder:
             "id": self._generate_uuid(),
             "status": "final",
             "type": {
-                "coding": [{
-                    "system": "http://loinc.org",
-                    "code": loinc["doc_type"]
-                }]
+                "coding": [{"system": "http://loinc.org", "code": loinc["doc_type"]}]
             },
             "subject": {"reference": f"Patient/{self.patient_id}"},
             "date": datetime.now().isoformat(),
             "author": [{"reference": f"Practitioner/{self.practitioner_id}"}],
             "title": "International Patient Summary",
-            "section": self.sections
+            "section": self.sections,
         }
 
         # Composition must be first
@@ -175,8 +181,11 @@ class IPSBuilder:
             "id": self._generate_uuid(),
             "type": "document",
             "timestamp": datetime.now().isoformat(),
-            "entry": [{
-                "fullUrl": f"urn:uuid:{e['resource']['id']}",
-                "resource": e['resource']
-            } for e in all_entries]
+            "entry": [
+                {
+                    "fullUrl": f"urn:uuid:{e['resource']['id']}",
+                    "resource": e["resource"],
+                }
+                for e in all_entries
+            ],
         }

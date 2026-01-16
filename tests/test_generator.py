@@ -2,9 +2,7 @@ import unittest
 import os
 from ips_sampler.generator import IPSGenerator
 
-CONFIG_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "config", "ips_config.json"
-)
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config", "ips_config.json")
 
 
 class TestIPSGenerator(unittest.TestCase):
@@ -31,10 +29,9 @@ class TestIPSGenerator(unittest.TestCase):
 
         self.assertEqual(run_a["id"], run_b["id"])
         self.assertEqual(
-            run_a["entry"][1]["resource"]["id"],
-            run_b["entry"][1]["resource"]["id"]
+            run_a["entry"][1]["resource"]["id"], run_b["entry"][1]["resource"]["id"]
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
