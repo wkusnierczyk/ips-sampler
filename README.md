@@ -106,6 +106,7 @@ This project uses a `Makefile` to automate common development tasks.
 | **`lint`** | `make lint` | Checks code style and logical errors using **Flake8**. |
 | **`type-check`** | `make type-check` | Performs static type analysis using **Mypy**. |
 | **`test`** | `make test` | Runs the unit test suite using Python's `unittest` module. |
+| **`docs`** | `make docs` | Generates HTML documentation using **pdoc** in the `docs/` directory. |
 | **`dist`** | `make dist` | Builds distribution artifacts (Source Archive and Wheel) in the `dist/` directory. |
 | **`clean`** | `make clean` | Removes build artifacts, cached files (`__pycache__`), output data, and temporary directories. |
 | **`all`** | `make all` | Runs `install`, `type-check`, and `test` in sequence. |
