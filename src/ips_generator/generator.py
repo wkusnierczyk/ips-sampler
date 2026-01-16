@@ -38,7 +38,7 @@ class IPSGenerator:
             pat_rng = random.Random(pat_seed)
 
             # Helper to pick random date
-            def rand_date(rng, start, end):
+            def rand_date(rng: random.Random, start: int, end: int) -> str:
                 return (
                     datetime.now() - timedelta(days=rng.randint(start, end))
                 ).strftime("%Y-%m-%d")
