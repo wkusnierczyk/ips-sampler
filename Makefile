@@ -6,6 +6,7 @@ all: install type-check test
 
 install:
 	$(PYTHON) -m pip install -e .[dev]
+	$(PYTHON) -m pip install -r requirements.txt
 
 format:
 	black src tests

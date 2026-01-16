@@ -15,7 +15,8 @@ dev = [
     "black",
     "flake8",
     "mypy",
-    "pytest"
+    "pytest",
+    "pdoc"
 ]
 
 [project.scripts]
