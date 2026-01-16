@@ -69,10 +69,10 @@ def main() -> None:
         print(
             "ips-generator: Synthetic International " "Patient Summary (IPS) Generator"
         )
-        print(f"├─ version: {__version__}")
+        print(f"├─ version:   {__version__}")
         print("├─ developer: mailto:waclaw.kusnierczyk@gmail.com")
-        print("├─ source: https://github.com/wkusnierczyk/ips-sampler")
-        print("└─ licence: MIT https://opensource.org/licenses/MIT")
+        print("├─ source:    https://github.com/wkusnierczyk/ips-sampler")
+        print("└─ licence:   MIT https://opensource.org/licenses/MIT")
         sys.exit(0)
 
     # Validate required args
