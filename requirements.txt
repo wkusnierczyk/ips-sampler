@@ -1,0 +1,2 @@
+# No external dependencies required for this basic version
+# If you add library dependencies later, list them here.
