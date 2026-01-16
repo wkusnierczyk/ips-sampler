@@ -4,29 +4,58 @@
       "allergies": "48765-2",
       "medications": "10160-0",
       "problems": "11450-4",
+      "immunizations": "11369-6",
+      "procedures": "47519-4",
+      "devices": "46264-8",
+      "results": "30954-2",
       "doc_type": "60591-5"
     }
   },
   "demographics": {
-    "family_names": ["Smith", "Garcia", "Kim", "Muller", "Rossi", "Ivanov", "Dubois", "Sato"],
-    "given_names": ["James", "Maria", "Wei", "Anna", "Luca", "Olga", "Hiroshi", "Claire"]
+    "family_names": ["Smith", "Garcia", "Kim", "Muller", "Rossi", "Ivanov", "Dubois", "Sato", "Andersson", "Kowalski"],
+    "given_names": ["James", "Maria", "Wei", "Anna", "Luca", "Olga", "Hiroshi", "Claire", "Lars", "Sofia"]
   },
   "clinical_data": {
     "conditions": [
       {"code": "38341003", "display": "Hypertension", "system": "http://snomed.info/sct"},
-      {"code": "73211009", "display": "Diabetes mellitus", "system": "http://snomed.info/sct"},
+      {"code": "73211009", "display": "Diabetes mellitus type 2", "system": "http://snomed.info/sct"},
       {"code": "195967001", "display": "Asthma", "system": "http://snomed.info/sct"},
-      {"code": "22298006", "display": "Myocardial infarction", "system": "http://snomed.info/sct"}
+      {"code": "22298006", "display": "Myocardial infarction", "system": "http://snomed.info/sct"},
+      {"code": "84757009", "display": "Epilepsy", "system": "http://snomed.info/sct"}
     ],
     "medications": [
       {"code": "319864", "display": "Hydrochlorothiazide 25 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"},
       {"code": "197361", "display": "Amlodipine 5 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"},
-      {"code": "860975", "display": "Metformin 500 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"}
+      {"code": "860975", "display": "Metformin 500 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"},
+      {"code": "313920", "display": "Omeprazole 20 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"},
+      {"code": "857009", "display": "Simvastatin 20 MG", "system": "http://www.nlm.nih.gov/research/umls/rxnorm"}
     ],
     "allergies": [
-      {"code": "91936005", "display": "Penicillin allergy", "system": "http://snomed.info/sct"},
-      {"code": "300916003", "display": "Latex allergy", "system": "http://snomed.info/sct"},
-      {"code": "293637006", "display": "Peanut allergy", "system": "http://snomed.info/sct"}
+      {"code": "91936005", "display": "Allergy to Penicillin", "system": "http://snomed.info/sct"},
+      {"code": "300916003", "display": "Allergy to Latex", "system": "http://snomed.info/sct"},
+      {"code": "293637006", "display": "Allergy to Peanuts", "system": "http://snomed.info/sct"},
+      {"code": "294912003", "display": "Allergy to Eggs", "system": "http://snomed.info/sct"}
+    ],
+    "immunizations": [
+      {"code": "207", "display": "COVID-19, mRNA, Spikevax", "system": "http://hl7.org/fhir/sid/cvx"},
+      {"code": "197", "display": "Influenza, high-dose", "system": "http://hl7.org/fhir/sid/cvx"},
+      {"code": "03", "display": "MMR", "system": "http://hl7.org/fhir/sid/cvx"},
+      {"code": "115", "display": "Tdap", "system": "http://hl7.org/fhir/sid/cvx"}
+    ],
+    "procedures": [
+      {"code": "80146002", "display": "Appendectomy", "system": "http://snomed.info/sct"},
+      {"code": "104001", "display": "Excision of lesion of patella", "system": "http://snomed.info/sct"},
+      {"code": "439497003", "display": "Total hip replacement", "system": "http://snomed.info/sct"}
+    ],
+    "devices": [
+      {"code": "441509002", "display": "Cardiac Pacemaker", "system": "http://snomed.info/sct"},
+      {"code": "705354000", "display": "Insulin Pump", "system": "http://snomed.info/sct"}
+    ],
+    "lab_results": [
+      {"code": "718-7", "display": "Hemoglobin", "value": "13.5 g/dL", "system": "http://loinc.org"},
+      {"code": "2339-0", "display": "Glucose [Mass/volume] in Blood", "value": "95 mg/dL", "system": "http://loinc.org"},
+      {"code": "4548-4", "display": "HbA1c", "value": "5.6 %", "system": "http://loinc.org"},
+      {"code": "94500-6", "display": "SARS-CoV-2 RNA", "value": "Negative", "system": "http://loinc.org"}
     ]
   }
 }

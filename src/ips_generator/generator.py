@@ -1,65 +1,54 @@
-"""
-IPS Generator Module.
-
-This module provides the core functionality for generating synthetic International
-Patient Summary (IPS) documents based on a provided configuration.
-It orchestrates the creation of patient records using the IPSBuilder.
-"""
-
 import json
 from typing import Any, Dict, Iterator, Optional
 from .builder import IPSBuilder
 
 
 class IPSGenerator:
-    """
-    Generator for International Patient Summary (IPS) FHIR Bundles.
-
-    This class handles the loading of configuration data and the batch generation
-    of synthetic patient records.
-
-    Attributes:
-        config (Dict[str, Any]): The loaded configuration dictionary containing
-        clinical data and terminology definitions.
-    """
-
     def __init__(self, config_path: str):
-        """
-        Initialize the IPSGenerator with a configuration file.
-
-        Args:
-            config_path (str): Path to the JSON configuration file containing
-                demographics, clinical data options, and terminologies.
-        """
         with open(config_path, "r") as f:
             self.config: Dict[str, Any] = json.load(f)
 
     def generate_batch(
         self, count: int, seed: Optional[int] = None
     ) -> Iterator[Dict[str, Any]]:
-        """
-        Generate a batch of synthetic IPS records.
-
-        Args:
-            count (int): The number of records to generate.
-            seed (Optional[int]): An optional random seed for reproducibility.
-                If provided, each record will be generated with a deterministic seed
-                derived from this base seed.
-
-        Yields:
-            Iterator[Dict[str, Any]]: An iterator yielding generated FHIR Bundle
-            resources as dictionaries.
-        """
         for i in range(count):
             record_seed = seed + i if seed is not None else None
             builder = IPSBuilder(self.config, seed=record_seed)
 
             rng = builder.rng
-            if rng.choice([True, False]):
-                builder.add_condition()
-            if rng.choice([True, False]):
-                builder.add_medication()
-            if rng.choice([True, False]):
+
+            # --- Randomly populate sections to create varied histories ---
+
+            # 1. Conditions (50% chance for 1-3 conditions)
+            if rng.random() > 0.2:
+                for _ in range(rng.randint(1, 3)):
+                    builder.add_condition()
+
+            # 2. Medications (Matches conditions mostly)
+            if rng.random() > 0.2:
+                for _ in range(rng.randint(1, 3)):
+                    builder.add_medication()
+
+            # 3. Allergies (30% chance)
+            if rng.random() > 0.7:
                 builder.add_allergy()
+
+            # 4. Immunizations (80% chance for 1-4 shots)
+            if rng.random() > 0.2:
+                for _ in range(rng.randint(1, 4)):
+                    builder.add_immunization()
+
+            # 5. Procedures (40% chance)
+            if rng.random() > 0.6:
+                builder.add_procedure()
+
+            # 6. Medical Devices (10% chance)
+            if rng.random() > 0.9:
+                builder.add_medical_device()
+
+            # 7. Lab Results (70% chance for 1-3 results)
+            if rng.random() > 0.3:
+                for _ in range(rng.randint(1, 3)):
+                    builder.add_lab_result()
 
             yield builder.build()
