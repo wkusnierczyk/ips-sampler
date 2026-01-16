@@ -1,4 +1,4 @@
-# ips-sampler
+# IPS Sampler
 
 IPS Sampler is a repository with references to International Patient Summary sample collections as well as tools for generating synthetic mock samples.
 
