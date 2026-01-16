@@ -6,8 +6,8 @@ IPS Sampler is a repository with references to International Patient Summary sam
 
 * [What is IPS](#what-is-ips)
 * [Sample collections](#sample-collections)
-* [Generator Tool (`ips-generator`)](#generator-tool-ips-generator)
-* [Development & Makefile Targets](#development--makefile-targets)
+* [Sample generator](#sample-generator)
+* [Development](#development)
 * [About](#about)
 
 ---
@@ -19,14 +19,14 @@ IPS Sampler is a repository with references to International Patient Summary sam
 The International Patient Summary (IPS) is a standardized, minimal, and non-exhaustive electronic health record extract designed for cross-border or unplanned care. 
 It provides essential, specialty-agnostic patient information—mainly medications, allergies, and problems—to ensure safe, continuity of care across different health systems. 
 
-### Key Components and Purpose
+### Key components and purpose
 
 * **Core Data** Includes patient identification, medications, allergies, and a problem list as required elements.
 * **Optional Data** May include immunizations, procedures, medical devices, and diagnostic results.
 * **Standards** Built on ISO/EN 17269 and implemented using HL7 FHIR or CDA, often incorporating SNOMED CT.
 * **Goal** To enable clinicians to access crucial, actionable data during emergencies or when a patient travels, regardless of location. 
 
-### Usage and Implementation
+### Usage and implementation
 
 * **Use Case** Primary focus is on unplanned, emergency care, but useful for routine care transitions.
 * **Global Adoption**:  
@@ -40,6 +40,8 @@ It provides essential, specialty-agnostic patient information—mainly medicatio
 * [The International Patient Summary Terminology](https://www.snomed.org/international-patient-summary-terminology)
 * [ISO 27269:2025 Health informatics — International patient summary](https://www.iso.org/standard/84639.html)
 
+---
+
 ## Sample collections
 
 * [**IPSViewer samples**](https://github.com/jddamore/IPSviewer/tree/main/samples)  
@@ -49,7 +51,7 @@ It provides essential, specialty-agnostic patient information—mainly medicatio
 
 ---
 
-## Generator Tool (`ips-generator`)
+## Sample generator
 
 Included in this repository is `ips-generator`, a CLI tool and Python library for generating synthetic International Patient Summary (IPS) FHIR records.
 
@@ -81,7 +83,7 @@ This installs the package systemwide.
 
 ### Usage
 
-#### Command Line Interface (CLI)
+#### Command line interface (CLI)
 
 Once installed, use the `ips-generator` command:
 
@@ -106,7 +108,7 @@ ips-generator -p 100 --minify
 ips-generator --about
 ```
 
-#### Python Library
+#### Python library
 
 You can also use the generator programmatically in your own Python scripts:
 
@@ -124,7 +126,7 @@ for bundle, p_idx, r_idx in gen.generate_batch(patient_count=5, repeats=2):
 
 ---
 
-## Development & Makefile Targets
+## Development
 
 This project uses a `Makefile` to automate common development tasks.
 
@@ -139,7 +141,7 @@ This project uses a `Makefile` to automate common development tasks.
 | **`clean`** | `make clean` | Removes build artifacts, cached files (`__pycache__`), output data, and temporary directories. |
 | **`all`** | `make all` | Runs `install`, `type-check`, and `test` in sequence. |
 
-### Running Tests
+### Tests
 
 To ensure the generator is working correctly:
 
