@@ -1,10 +1,3 @@
-"""
-Command Line Interface for IPS Generator.
-
-This module provides the entry point for the command-line tool. It parses arguments,
-sets up logging, and invokes the IPSGenerator to create synthetic records.
-"""
-
 import argparse
 import sys
 import json
@@ -12,25 +5,17 @@ import os
 import logging
 from typing import Optional
 from ips_generator.generator import IPSGenerator
+from ips_generator.renderer import IPSPDFRenderer
 from ips_generator import __version__
 
 # Configure Logging to explicitly use stderr
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s: %(message)s",
-    stream=sys.stderr,  # Explicitly send logs to stderr
+    level=logging.INFO, format="%(levelname)s: %(message)s", stream=sys.stderr
 )
 logger = logging.getLogger("ips-generator")
 
 
 def main() -> None:
-    """
-    Main entry point for the CLI.
-
-    Parses command line arguments for sample count, output directory, configuration
-    file, and seed. Generates the requested number of IPS records and saves them as
-    JSON files.
-    """
     parser = argparse.ArgumentParser(description="Generate synthetic IPS FHIR Bundles.")
 
     # Arguments
@@ -43,7 +28,7 @@ def main() -> None:
         "--output-dir",
         type=str,
         default="output",
-        help="Directory to save JSON files",
+        help="Directory to save output files",
     )
 
     default_config = "config/ips_config.json"
@@ -60,14 +45,22 @@ def main() -> None:
     parser.add_argument("--minify", action="store_true", help="Output minified JSON")
 
     parser.add_argument(
+        "--pdf",
+        action="store_true",
+        help="Generate PDF version of the records alongside JSON",
+    )
+
+    parser.add_argument(
         "--about", action="store_true", help="Show tool information and exit"
     )
 
     args = parser.parse_args()
 
-    # Handle --about (This goes to stdout as it is the requested output)
+    # Handle --about
     if args.about:
-        print("ips-generator: Synthetic International Patient Summary (IPS) Generator")
+        print(
+            "ips-generator: Synthetic International " "Patient Summary (IPS) Generator"
+        )
         print(f"├─ version:   {__version__}")
         print("├─ developer: mailto:waclaw.kusnierczyk@gmail.com")
         print("├─ source:    https://github.com/wkusnierczyk/ips-sampler")
@@ -86,13 +79,22 @@ def main() -> None:
 
     try:
         gen = IPSGenerator(args.config)
+        renderer = IPSPDFRenderer() if args.pdf else None
+
         logger.info(f"Generating {args.samples} records...")
 
         for i, bundle in enumerate(gen.generate_batch(args.samples, args.seed)):
-            filename = os.path.join(args.output_dir, f"ips_record_{i:04d}.json")
-            with open(filename, "w") as f:
+            # 1. Save JSON
+            base_filename = f"ips_record_{i:04d}"
+            json_path = os.path.join(args.output_dir, f"{base_filename}.json")
+            with open(json_path, "w") as f:
                 indent: Optional[int] = None if args.minify else 2
                 json.dump(bundle, f, indent=indent)
+
+            # 2. Save PDF (if requested)
+            if renderer:
+                pdf_path = os.path.join(args.output_dir, f"{base_filename}.pdf")
+                renderer.render_to_file(bundle, pdf_path)
 
         logger.info(
             f"Successfully generated {args.samples} files " f"in '{args.output_dir}'"
