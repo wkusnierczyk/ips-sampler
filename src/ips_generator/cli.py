@@ -53,13 +53,11 @@ def main() -> None:
 
     # Handle --about (This goes to stdout as it is the requested output)
     if args.about:
-        print(
-            "ips-generator: Synthetic International " "Patient Summary (IPS) Generator"
-        )
-        print(f"├─ version: {__version__}")
+        print("ips-generator: Synthetic International Patient Summary (IPS) Generator")
+        print(f"├─ version:   {__version__}")
         print("├─ developer: mailto:waclaw.kusnierczyk@gmail.com")
-        print("├─ source: https://github.com/wkusnierczyk/ips-sampler")
-        print("└─ licence: MIT https://opensource.org/licenses/MIT")
+        print("├─ source:    https://github.com/wkusnierczyk/ips-sampler")
+        print("└─ licence:   MIT https://opensource.org/licenses/MIT")
         sys.exit(0)
 
     # Validate required args

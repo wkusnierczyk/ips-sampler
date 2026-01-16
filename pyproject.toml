@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ips-generator"
-version = "0.1.0"
 description = "Synthetic International Patient Summary (IPS) Generator"
 readme = "README.md"
 requires-python = ">=3.8"
+dynamic = ["version"]
 dependencies = []
 
 [project.optional-dependencies]
@@ -23,6 +23,9 @@ ips-generator = "ips_generator.cli:main"
 
 [tool.setuptools.package-data]
 ips_generator = ["py.typed"]
+
+[tool.setuptools.dynamic]
+version = {attr = "ips_generator.__version__"}
 
 [tool.mypy]
 ignore_missing_imports = true
