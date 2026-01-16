@@ -7,8 +7,12 @@ from typing import Optional
 from ips_generator.generator import IPSGenerator
 from ips_generator import __version__
 
-# Configure Logging
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+# Configure Logging to explicitly use stderr
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(message)s",
+    stream=sys.stderr,  # Explicitly send logs to stderr
+)
 logger = logging.getLogger("ips-generator")
 
 
@@ -47,9 +51,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Handle --about
+    # Handle --about (This goes to stdout as it is the requested output)
     if args.about:
-        print("ips-generator: Synthetic International Patient Summary (IPS) Generator")
+        print(
+            "ips-generator: Synthetic International " "Patient Summary (IPS) Generator"
+        )
         print(f"├─ version: {__version__}")
         print("├─ developer: mailto:waclaw.kusnierczyk@gmail.com")
         print("├─ source: https://github.com/wkusnierczyk/ips-sampler")
