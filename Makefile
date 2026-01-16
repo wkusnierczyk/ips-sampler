@@ -1,6 +1,6 @@
 PYTHON=python3
 
-.PHONY: all clean install format lint type-check test dist
+.PHONY: all clean install format lint type-check test dist docs
 
 all: install type-check test
 
@@ -19,6 +19,10 @@ type-check:
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover tests
+
+# Generate HTML documentation
+docs:
+	pdoc -o docs src/ips_generator
 
 dist: clean
 	$(PYTHON) -m pip install build

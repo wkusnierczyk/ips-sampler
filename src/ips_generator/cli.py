@@ -1,3 +1,10 @@
+"""
+Command Line Interface for IPS Generator.
+
+This module provides the entry point for the command-line tool. It parses arguments,
+sets up logging, and invokes the IPSGenerator to create synthetic records.
+"""
+
 import argparse
 import sys
 import json
@@ -17,6 +24,13 @@ logger = logging.getLogger("ips-generator")
 
 
 def main() -> None:
+    """
+    Main entry point for the CLI.
+
+    Parses command line arguments for sample count, output directory, configuration
+    file, and seed. Generates the requested number of IPS records and saves them as
+    JSON files.
+    """
     parser = argparse.ArgumentParser(description="Generate synthetic IPS FHIR Bundles.")
 
     # Arguments
