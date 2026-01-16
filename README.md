@@ -72,6 +72,13 @@ make install
 
 This installs the package in "editable" mode, meaning changes to the source code are immediately reflected in the installed command.
 
+```bash
+pip install .
+```
+
+This installs the package systemwide.
+
+
 ### Usage
 
 #### Command Line Interface (CLI)
