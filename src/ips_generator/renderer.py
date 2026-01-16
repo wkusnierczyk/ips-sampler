@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -12,6 +12,7 @@ logger = logging.getLogger("ips-generator")
 class IPSPDFRenderer:
     """
     Renders FHIR IPS Bundles into human-readable PDF documents.
+    Supports core and optional sections.
     """
 
     def __init__(self) -> None:
@@ -37,19 +38,8 @@ class IPSPDFRenderer:
                 textColor=colors.darkblue,
             )
         )
-        self.styles.add(
-            ParagraphStyle(
-                name="Label",
-                parent=self.styles["Normal"],
-                fontName="Helvetica-Bold",
-                fontSize=10,
-            )
-        )
 
     def render_to_file(self, bundle: Dict[str, Any], output_path: str) -> None:
-        """
-        Generates a PDF file at output_path from the provided bundle.
-        """
         doc = SimpleDocTemplate(
             output_path,
             pagesize=A4,
@@ -61,44 +51,37 @@ class IPSPDFRenderer:
 
         story: List[Any] = []
 
-        # 1. Extract Data
-        patient = self._find_resource(bundle, "Patient")
-        practitioner = self._find_resource(bundle, "Practitioner")
-
-        # 2. Document Header
+        # 1. Header
         story.append(
             Paragraph("International Patient Summary", self.styles["IPSHeader"])
         )
         story.append(
             Paragraph(
-                f"Date: {bundle.get('timestamp', 'Unknown')}", self.styles["Normal"]
+                f"Generated: {bundle.get('timestamp', 'Unknown')}",
+                self.styles["Normal"],
             )
         )
         story.append(Spacer(1, 0.2 * inch))
 
-        # 3. Patient Info Section
+        # 2. Patient
+        patient = self._find_resource(bundle, "Patient")
         if patient:
             self._add_patient_section(story, patient)
 
-        # 4. Author Info
-        if practitioner:
-            story.append(Spacer(1, 0.1 * inch))
-            name = practitioner.get("name", [{}])[0]
-            p_name = f"{name.get('given', [''])[0]} {name.get('family', '')}"
-            story.append(
-                Paragraph(f"<b>Author:</b> Dr. {p_name}", self.styles["Normal"])
-            )
+        story.append(Spacer(1, 0.2 * inch))
 
-        story.append(Spacer(1, 0.3 * inch))
-
-        # 5. Clinical Sections
-        self._add_clinical_section(
+        # 3. Clinical Sections
+        self._add_generic_section(
             story, bundle, "Allergies and Intolerances", "AllergyIntolerance"
         )
-        self._add_clinical_section(
+        self._add_generic_section(story, bundle, "Problem List", "Condition")
+        self._add_generic_section(
             story, bundle, "Medication Summary", "MedicationStatement"
         )
-        self._add_clinical_section(story, bundle, "Problem List", "Condition")
+        self._add_generic_section(story, bundle, "Immunizations", "Immunization")
+        self._add_generic_section(story, bundle, "Procedures", "Procedure")
+        self._add_generic_section(story, bundle, "Medical Devices", "Device")
+        self._add_generic_section(story, bundle, "Diagnostic Results", "Observation")
 
         # Build
         try:
@@ -108,13 +91,17 @@ class IPSPDFRenderer:
             logger.error(f"Failed to build PDF {output_path}: {e}")
             raise
 
-    def _find_resource(self, bundle: Dict[str, Any], resource_type: str) -> Any:
+    def _find_resource(
+        self, bundle: Dict[str, Any], resource_type: str
+    ) -> Optional[Dict[str, Any]]:
         for entry in bundle.get("entry", []):
             if entry.get("resource", {}).get("resourceType") == resource_type:
                 return entry["resource"]
         return None
 
-    def _find_resources(self, bundle: Dict[str, Any], resource_type: str) -> List[Any]:
+    def _find_resources(
+        self, bundle: Dict[str, Any], resource_type: str
+    ) -> List[Dict[str, Any]]:
         return [
             entry["resource"]
             for entry in bundle.get("entry", [])
@@ -128,7 +115,7 @@ class IPSPDFRenderer:
         data = [
             ["Patient Name:", full_name],
             ["Birth Date:", patient.get("birthDate", "Unknown")],
-            ["Gender:", patient.get("gender", "Unknown").capitalize()],
+            ["Gender:", str(patient.get("gender", "Unknown")).capitalize()],
             ["ID:", patient.get("id", "Unknown")],
         ]
 
@@ -139,7 +126,6 @@ class IPSPDFRenderer:
                     ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
                     ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                 ]
             )
         )
@@ -147,9 +133,13 @@ class IPSPDFRenderer:
         story.append(Paragraph("Patient Demographics", self.styles["SectionHeader"]))
         story.append(table)
 
-    def _add_clinical_section(
+    def _add_generic_section(
         self, story: List[Any], bundle: Dict[str, Any], title: str, resource_type: str
     ) -> None:
+        """
+        Generic renderer for any clinical section.
+        Extracts code/display and status/date where available.
+        """
         resources = self._find_resources(bundle, resource_type)
         if not resources:
             return
@@ -157,50 +147,62 @@ class IPSPDFRenderer:
         story.append(Paragraph(title, self.styles["SectionHeader"]))
 
         # Table Header
-        table_data = [["Code / Description", "Status", "System"]]
+        headers = ["Description / Code", "Details", "Date"]
+        table_data = [headers]
 
         for res in resources:
-            coding = self._extract_coding(res)
-            status = self._extract_status(res)
+            coding = self._extract_primary_code(res)
 
-            display = coding.get("display", "Unknown Code")
+            # Column 1: Description
+            display = coding.get("display", "Unknown")
             code = coding.get("code", "")
-            system = coding.get("system", "").split("/")[-1]  # Simplify system URL
+            col1 = f"{display}\n({code})"
 
-            row_text = f"{display} ({code})"
-            table_data.append([row_text, status, system])
+            # Column 2: Status or Value
+            status = str(res.get("status", ""))
+            value = res.get("valueString", "")
+            col2 = value if value else status
 
-        t = Table(table_data, colWidths=[3.5 * inch, 1 * inch, 1.5 * inch])
+            # Column 3: Date
+            date = self._extract_date(res)
+
+            table_data.append([col1, col2, date])
+
+        t = Table(table_data, colWidths=[3 * inch, 1.5 * inch, 1.5 * inch])
         t.setStyle(
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                     ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("FONTSIZE", (0, 0), (-1, 0), 10),
-                    ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
-                    ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("FontSize", (0, 0), (-1, -1), 9),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                 ]
             )
         )
         story.append(t)
         story.append(Spacer(1, 0.1 * inch))
 
-    def _extract_coding(self, resource: Dict[str, Any]) -> Dict[str, str]:
-        # Handle difference between Condition.code and
-        # MedicationStatement.medicationCodeableConcept
-        if "code" in resource:
-            return resource["code"].get("coding", [{}])[0]
-        elif "medicationCodeableConcept" in resource:
-            return resource["medicationCodeableConcept"].get("coding", [{}])[0]
+    def _extract_primary_code(self, res: Dict[str, Any]) -> Dict[str, str]:
+        # Try standard locations for clinical codes
+        if "code" in res:
+            return res["code"].get("coding", [{}])[0]
+        if "vaccineCode" in res:
+            return res["vaccineCode"].get("coding", [{}])[0]
+        if "medicationCodeableConcept" in res:
+            return res["medicationCodeableConcept"].get("coding", [{}])[0]
+        if "type" in res:  # For Devices
+            return res["type"].get("coding", [{}])[0]
         return {}
 
-    def _extract_status(self, resource: Dict[str, Any]) -> str:
-        # Handle ClinicalStatus object vs string status
-        if "clinicalStatus" in resource:
-            return (
-                resource["clinicalStatus"].get("coding", [{}])[0].get("code", "unknown")
-            )
-        return resource.get("status", "unknown")
+    def _extract_date(self, res: Dict[str, Any]) -> str:
+        # Try standard locations for dates
+        return (
+            res.get("onsetDateTime")
+            or res.get("effectiveDateTime")
+            or res.get("occurrenceDateTime")
+            or res.get("performedDateTime")
+            or res.get("recordedDate")
+            or ""
+        )

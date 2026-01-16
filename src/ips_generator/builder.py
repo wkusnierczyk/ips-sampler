@@ -1,12 +1,3 @@
-"""
-IPS Builder Module.
-
-This module contains the IPSBuilder class, which implements a fluent API for
-constructing individual International Patient Summary (IPS) FHIR Bundles.
-It handles the creation of FHIR resources and the Composition resource that
-binds them together.
-"""
-
 import uuid
 from datetime import datetime, timedelta
 import random
@@ -19,72 +10,68 @@ FHIRResource = Dict[str, Any]
 class IPSBuilder:
     """
     Fluent API Builder for a single IPS FHIR Bundle.
-
-    This class manages the state of a single patient record being generated. It allows
-    for step-by-step addition of clinical content (conditions, medications, allergies)
-    and final assembly into a FHIR Document Bundle.
-
-    Attributes:
-        config (Dict[str, Any]): The configuration dictionary containing clinical data.
-        rng (random.Random): Seeded random number generator.
-        patient_id (str): UUID for the Patient resource.
-        practitioner_id (str): UUID for the Practitioner resource.
-        resources (List[FHIRResource]): List of FHIR resources created so far.
-        sections (List[Dict[str, Any]]): List of sections for the Composition resource.
+    Handles the creation of core and optional IPS sections.
     """
 
-    def __init__(self, data_config: Dict[str, Any], seed: Optional[int] = None):
-        """
-        Initialize the builder.
-
-        Args:
-            data_config (Dict[str, Any]): Configuration dictionary with data options.
-            seed (Optional[int]): Random seed for this specific record generation.
-        """
+    def __init__(
+        self,
+        data_config: Dict[str, Any],
+        seed: Optional[int] = None,
+        patient_context: Optional[Dict[str, Any]] = None,
+    ):
         self.config = data_config
         self.rng = random.Random(seed) if seed is not None else random.Random()
+        self.patient_context = patient_context
 
         # Internal state
-        self.patient_id = self._generate_uuid()
+        self.patient_id = (
+            patient_context["id"] if patient_context else self._generate_uuid()
+        )
+        # Practitioner is usually different per record/author, so we regen it
         self.practitioner_id = self._generate_uuid()
+
         self.resources: List[FHIRResource] = []
         self.sections: List[Dict[str, Any]] = []
         self._init_core_resources()
 
     def _generate_uuid(self) -> str:
-        """
-        Generate a reproducible UUID based on the seeded RNG.
-
-        Returns:
-            str: A string representation of a UUID.
-        """
+        """Generates a reproducible UUID based on the seeded RNG."""
         return str(uuid.UUID(int=self.rng.getrandbits(128)))
 
+    def _random_date(self, start_days_ago: int, end_days_ago: int) -> str:
+        """Generates a random date string (YYYY-MM-DD)."""
+        days = self.rng.randint(start_days_ago, end_days_ago)
+        return (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+
     def _init_core_resources(self) -> "IPSBuilder":
-        """
-        Initialize the core resources (Patient, Practitioner) for the bundle.
+        # 1. Determine Patient Data (Reuse context if provided, else generate)
+        if self.patient_context:
+            pat_data = self.patient_context
+        else:
+            fam = self.rng.choice(self.config["demographics"]["family_names"])
+            giv = self.rng.choice(self.config["demographics"]["given_names"])
+            birth_date = self._random_date(7000, 30000)
+            gender = self.rng.choice(["male", "female", "other", "unknown"])
 
-        Selects random demographics based on configuration and adds the resources
-        to the internal list.
+            pat_data = {
+                "id": self.patient_id,
+                "family": fam,
+                "given": giv,
+                "birthDate": birth_date,
+                "gender": gender,
+            }
 
-        Returns:
-            IPSBuilder: Returns self for method chaining.
-        """
-        fam = self.rng.choice(self.config["demographics"]["family_names"])
-        giv = self.rng.choice(self.config["demographics"]["given_names"])
-
-        birth_days_ago = self.rng.randint(7000, 30000)
-        birth_date = datetime.now() - timedelta(days=birth_days_ago)
-
+        # 2. Build Patient Resource
         patient: FHIRResource = {
             "resourceType": "Patient",
-            "id": self.patient_id,
+            "id": pat_data["id"],
             "active": True,
-            "name": [{"family": fam, "given": [giv]}],
-            "gender": self.rng.choice(["male", "female", "other", "unknown"]),
-            "birthDate": birth_date.strftime("%Y-%m-%d"),
+            "name": [{"family": pat_data["family"], "given": [pat_data["given"]]}],
+            "gender": pat_data["gender"],
+            "birthDate": pat_data["birthDate"],
         }
 
+        # 3. Build Practitioner Resource
         practitioner: FHIRResource = {
             "resourceType": "Practitioner",
             "id": self.practitioner_id,
@@ -94,18 +81,12 @@ class IPSBuilder:
         self.resources.extend([patient, practitioner])
         return self
 
+    # --- Core Sections ---
+
     def add_condition(self) -> "IPSBuilder":
-        """
-        Add a random condition (problem) to the record.
-
-        Selects a condition from the configuration, creates a Condition resource,
-        and adds it to the 'Problem List' section.
-
-        Returns:
-            IPSBuilder: Returns self for method chaining.
-        """
         cond_def = self.rng.choice(self.config["clinical_data"]["conditions"])
         res_id = self._generate_uuid()
+        onset_date = self._random_date(100, 3000)
 
         condition: FHIRResource = {
             "resourceType": "Condition",
@@ -129,6 +110,7 @@ class IPSBuilder:
                 ]
             },
             "subject": {"reference": f"Patient/{self.patient_id}"},
+            "onsetDateTime": onset_date,
         }
 
         self.resources.append(condition)
@@ -140,17 +122,9 @@ class IPSBuilder:
         return self
 
     def add_medication(self) -> "IPSBuilder":
-        """
-        Add a random medication statement to the record.
-
-        Selects a medication from the configuration, creates a MedicationStatement
-        resource, and adds it to the 'Medication Summary' section.
-
-        Returns:
-            IPSBuilder: Returns self for method chaining.
-        """
         med_def = self.rng.choice(self.config["clinical_data"]["medications"])
         res_id = self._generate_uuid()
+        effective_date = self._random_date(10, 365)
 
         med_stmt: FHIRResource = {
             "resourceType": "MedicationStatement",
@@ -166,7 +140,7 @@ class IPSBuilder:
                 ]
             },
             "subject": {"reference": f"Patient/{self.patient_id}"},
-            "effectiveDateTime": datetime.now().strftime("%Y-%m-%d"),
+            "effectiveDateTime": effective_date,
         }
 
         self.resources.append(med_stmt)
@@ -178,21 +152,21 @@ class IPSBuilder:
         return self
 
     def add_allergy(self) -> "IPSBuilder":
-        """
-        Add a random allergy intolerance to the record.
-
-        Selects an allergy from the configuration, creates an AllergyIntolerance
-        resource, and adds it to the 'Allergies' section.
-
-        Returns:
-            IPSBuilder: Returns self for method chaining.
-        """
         alg_def = self.rng.choice(self.config["clinical_data"]["allergies"])
         res_id = self._generate_uuid()
 
         allergy: FHIRResource = {
             "resourceType": "AllergyIntolerance",
             "id": res_id,
+            "clinicalStatus": {
+                "coding": [
+                    {
+                        "system": "http://terminology.hl7.org/CodeSystem/"
+                        "allergyintolerance-clinical",
+                        "code": "active",
+                    }
+                ]
+            },
             "code": {
                 "coding": [
                     {
@@ -203,29 +177,150 @@ class IPSBuilder:
                 ]
             },
             "patient": {"reference": f"Patient/{self.patient_id}"},
+            "recordedDate": self._random_date(100, 5000),
         }
 
         self.resources.append(allergy)
         self._ensure_section(
-            "Allergies",
+            "Allergies and Intolerances",
             self.config["terminologies"]["loinc"]["allergies"],
             f"AllergyIntolerance/{res_id}",
         )
         return self
 
+    # --- Extended History Sections ---
+
+    def add_immunization(self) -> "IPSBuilder":
+        imm_def = self.rng.choice(self.config["clinical_data"]["immunizations"])
+        res_id = self._generate_uuid()
+        occ_date = self._random_date(30, 1000)
+
+        immunization: FHIRResource = {
+            "resourceType": "Immunization",
+            "id": res_id,
+            "status": "completed",
+            "vaccineCode": {
+                "coding": [
+                    {
+                        "system": imm_def["system"],
+                        "code": imm_def["code"],
+                        "display": imm_def["display"],
+                    }
+                ]
+            },
+            "patient": {"reference": f"Patient/{self.patient_id}"},
+            "occurrenceDateTime": occ_date,
+        }
+
+        self.resources.append(immunization)
+        self._ensure_section(
+            "History of Immunizations",
+            self.config["terminologies"]["loinc"]["immunizations"],
+            f"Immunization/{res_id}",
+        )
+        return self
+
+    def add_procedure(self) -> "IPSBuilder":
+        proc_def = self.rng.choice(self.config["clinical_data"]["procedures"])
+        res_id = self._generate_uuid()
+        perf_date = self._random_date(200, 4000)
+
+        procedure: FHIRResource = {
+            "resourceType": "Procedure",
+            "id": res_id,
+            "status": "completed",
+            "code": {
+                "coding": [
+                    {
+                        "system": proc_def["system"],
+                        "code": proc_def["code"],
+                        "display": proc_def["display"],
+                    }
+                ]
+            },
+            "subject": {"reference": f"Patient/{self.patient_id}"},
+            "performedDateTime": perf_date,
+        }
+
+        self.resources.append(procedure)
+        self._ensure_section(
+            "History of Procedures",
+            self.config["terminologies"]["loinc"]["procedures"],
+            f"Procedure/{res_id}",
+        )
+        return self
+
+    def add_medical_device(self) -> "IPSBuilder":
+        dev_def = self.rng.choice(self.config["clinical_data"]["devices"])
+        res_id = self._generate_uuid()
+
+        device: FHIRResource = {
+            "resourceType": "Device",
+            "id": res_id,
+            "type": {
+                "coding": [
+                    {
+                        "system": dev_def["system"],
+                        "code": dev_def["code"],
+                        "display": dev_def["display"],
+                    }
+                ]
+            },
+            "patient": {"reference": f"Patient/{self.patient_id}"},
+        }
+
+        self.resources.append(device)
+        self._ensure_section(
+            "Medical Devices",
+            self.config["terminologies"]["loinc"]["devices"],
+            f"Device/{res_id}",
+        )
+        return self
+
+    def add_lab_result(self) -> "IPSBuilder":
+        lab_def = self.rng.choice(self.config["clinical_data"]["lab_results"])
+        res_id = self._generate_uuid()
+        eff_date = self._random_date(1, 60)
+
+        observation: FHIRResource = {
+            "resourceType": "Observation",
+            "id": res_id,
+            "status": "final",
+            "category": [
+                {
+                    "coding": [
+                        {
+                            "system": "http://terminology.hl7.org/CodeSystem/"
+                            "observation-category",
+                            "code": "laboratory",
+                            "display": "Laboratory",
+                        }
+                    ]
+                }
+            ],
+            "code": {
+                "coding": [
+                    {
+                        "system": lab_def["system"],
+                        "code": lab_def["code"],
+                        "display": lab_def["display"],
+                    }
+                ]
+            },
+            "subject": {"reference": f"Patient/{self.patient_id}"},
+            "effectiveDateTime": eff_date,
+            "valueString": lab_def["value"],
+        }
+
+        self.resources.append(observation)
+        self._ensure_section(
+            "Diagnostic Results",
+            self.config["terminologies"]["loinc"]["results"],
+            f"Observation/{res_id}",
+        )
+        return self
+
     def _ensure_section(self, title: str, code: str, reference: str) -> None:
-        """
-        Ensure a section exists in the Composition and add a reference to it.
-
-        If the section with the given code exists, the reference is appended.
-        Otherwise, a new section is created.
-
-        Args:
-            title (str): Title of the section.
-            code (str): LOINC code for the section.
-            reference (str): Relative reference to the resource (e.g.,
-            "Condition/uuid").
-        """
         for sec in self.sections:
             if sec["code"]["coding"][0]["code"] == code:
                 sec["entry"].append({"reference": reference})
@@ -234,20 +329,15 @@ class IPSBuilder:
         new_section = {
             "title": title,
             "code": {"coding": [{"system": "http://loinc.org", "code": code}]},
+            "text": {
+                "status": "generated",
+                "div": f"<div xmlns='http://www.w3.org/1999/xhtml'>{title}</div>",
+            },
             "entry": [{"reference": reference}],
         }
         self.sections.append(new_section)
 
     def build(self) -> FHIRResource:
-        """
-        Finalize and build the IPS FHIR Bundle.
-
-        Creates the Composition resource linking all sections and resources,
-        and wraps everything into a Bundle of type 'document'.
-
-        Returns:
-            FHIRResource: The complete FHIR Bundle as a dictionary.
-        """
         loinc = self.config["terminologies"]["loinc"]
         composition: FHIRResource = {
             "resourceType": "Composition",

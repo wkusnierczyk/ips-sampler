@@ -2,6 +2,18 @@
 
 IPS Sampler is a repository with references to International Patient Summary sample collections as well as tools for generating synthetic mock samples.
 
+## Contents
+
+* [What is IPS](#what-is-ips)
+* [Sample collections](#sample-collections)
+* [Generator Tool (`ips-generator`)](#generator-tool-ips-generator)
+* [Development & Makefile Targets](#development--makefile-targets)
+* [About](#about)
+
+---
+
+## 
+
 ## What is IPS
 
 The International Patient Summary (IPS) is a standardized, minimal, and non-exhaustive electronic health record extract designed for cross-border or unplanned care. 
@@ -48,6 +60,7 @@ Included in this repository is `ips-generator`, a CLI tool and Python library fo
 * **Reproducible:** Supports deterministic generation via the `--seed` flag.
 * **Standards Compliant:** Generates FHIR R4 Bundles (document type) suitable for IPS testing.
 * **PDF Rendering:** Option to generate human-readable PDF documents alongside the JSON data.
+* **Longitudinal Data Simulation:** Supports generating multiple distinct records for the same patient identity to test reconciliation and history tracking.
 
 ### Installation
 
@@ -66,17 +79,21 @@ This installs the package in "editable" mode, meaning changes to the source code
 Once installed, use the `ips-generator` command:
 
 ```bash
-# Generate 50 records to the default 'output/' directory
-ips-generator --samples 50
+# Generate records for 50 unique patients (default 1 record per patient)
+ips-generator --patients 50
+
+# Generate 3 distinct records for each of 10 patients (30 files total)
+# Useful for testing reconciliation of conflicting/evolving data
+ips-generator --patients 10 --repeats 3
 
 # Generate 10 records with PDF counterparts
-ips-generator --samples 10 --pdf
+ips-generator --patients 10 --pdf
 
-# Generate 10 records to a specific folder with a specific seed (reproducible)
-ips-generator --samples 10 --output-dir ./my_data --seed 12345
+# Generate records to a specific folder with a seed (reproducible)
+ips-generator -p 10 --output-dir ./my_data --seed 12345
 
-# Generate minified JSON (no indentation) for smaller file sizes
-ips-generator -s 100 --minify
+# Generate minified JSON (no indentation)
+ips-generator -p 100 --minify
 
 # View tool information
 ips-generator --about
@@ -93,8 +110,9 @@ from ips_generator.generator import IPSGenerator
 gen = IPSGenerator("config/ips_config.json")
 
 # Generate a batch of bundles
-for bundle in gen.generate_batch(count=5):
-    print(f"Generated IPS Bundle ID: {bundle['id']}")
+# Returns a tuple: (bundle, patient_index, record_index)
+for bundle, p_idx, r_idx in gen.generate_batch(patient_count=5, repeats=2):
+    print(f"Patient {p_idx} - Record {r_idx}: {bundle['id']}")
 ```
 
 ---
@@ -120,4 +138,16 @@ To ensure the generator is working correctly:
 
 ```bash
 make test
+```
+
+## About
+
+```bash
+$ ips-generator --about
+
+ips-generator: Synthetic International Patient Summary (IPS) Generator
+├─ version:   0.1.2
+├─ developer: mailto:waclaw.kusnierczyk@gmail.com
+├─ source:    https://github.com/wkusnierczyk/ips-sampler
+└─ licence:   MIT https://opensource.org/licenses/MIT
 ```

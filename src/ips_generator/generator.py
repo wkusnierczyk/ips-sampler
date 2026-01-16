@@ -1,65 +1,91 @@
-"""
-IPS Generator Module.
-
-This module provides the core functionality for generating synthetic International
-Patient Summary (IPS) documents based on a provided configuration.
-It orchestrates the creation of patient records using the IPSBuilder.
-"""
-
 import json
-from typing import Any, Dict, Iterator, Optional
+import random
+import uuid
+from datetime import datetime, timedelta
+from typing import Any, Dict, Iterator, Optional, Tuple
 from .builder import IPSBuilder
 
 
 class IPSGenerator:
-    """
-    Generator for International Patient Summary (IPS) FHIR Bundles.
-
-    This class handles the loading of configuration data and the batch generation
-    of synthetic patient records.
-
-    Attributes:
-        config (Dict[str, Any]): The loaded configuration dictionary containing
-        clinical data and terminology definitions.
-    """
-
     def __init__(self, config_path: str):
-        """
-        Initialize the IPSGenerator with a configuration file.
-
-        Args:
-            config_path (str): Path to the JSON configuration file containing
-                demographics, clinical data options, and terminologies.
-        """
         with open(config_path, "r") as f:
             self.config: Dict[str, Any] = json.load(f)
 
     def generate_batch(
-        self, count: int, seed: Optional[int] = None
-    ) -> Iterator[Dict[str, Any]]:
+        self, patient_count: int, repeats: int = 1, seed: Optional[int] = None
+    ) -> Iterator[Tuple[Dict[str, Any], int, int]]:
         """
-        Generate a batch of synthetic IPS records.
+        Generates batches of IPS records.
 
         Args:
-            count (int): The number of records to generate.
-            seed (Optional[int]): An optional random seed for reproducibility.
-                If provided, each record will be generated with a deterministic seed
-                derived from this base seed.
+            patient_count: Number of unique patients to simulate.
+            repeats: Number of records to generate per patient.
+            seed: Base random seed.
 
         Yields:
-            Iterator[Dict[str, Any]]: An iterator yielding generated FHIR Bundle
-            resources as dictionaries.
+            Tuple containing:
+            - The FHIR Bundle (dict)
+            - Patient Index (int)
+            - Record Index (int)
         """
-        for i in range(count):
-            record_seed = seed + i if seed is not None else None
-            builder = IPSBuilder(self.config, seed=record_seed)
 
-            rng = builder.rng
-            if rng.choice([True, False]):
-                builder.add_condition()
-            if rng.choice([True, False]):
-                builder.add_medication()
-            if rng.choice([True, False]):
-                builder.add_allergy()
+        base_rng = random.Random(seed) if seed is not None else random.Random()
 
-            yield builder.build()
+        for p_idx in range(patient_count):
+            # 1. Establish Patient Identity (persists across repeats)
+            # We generate specific attributes here to pass to the builder
+            pat_seed = base_rng.randint(0, 2**32)
+            pat_rng = random.Random(pat_seed)
+
+            # Helper to pick random date
+            def rand_date(rng, start, end):
+                return (
+                    datetime.now() - timedelta(days=rng.randint(start, end))
+                ).strftime("%Y-%m-%d")
+
+            patient_context = {
+                "id": str(uuid.UUID(int=pat_rng.getrandbits(128))),
+                "family": pat_rng.choice(self.config["demographics"]["family_names"]),
+                "given": pat_rng.choice(self.config["demographics"]["given_names"]),
+                "birthDate": rand_date(pat_rng, 7000, 30000),
+                "gender": pat_rng.choice(["male", "female", "other", "unknown"]),
+            }
+
+            # 2. Generate Records for this Patient
+            for r_idx in range(repeats):
+                # Unique seed for this specific record instance
+                record_seed = base_rng.randint(0, 2**32)
+
+                builder = IPSBuilder(
+                    self.config, seed=record_seed, patient_context=patient_context
+                )
+
+                rng = builder.rng
+
+                # --- Randomly populate sections ---
+                if rng.random() > 0.2:
+                    for _ in range(rng.randint(1, 3)):
+                        builder.add_condition()
+
+                if rng.random() > 0.2:
+                    for _ in range(rng.randint(1, 3)):
+                        builder.add_medication()
+
+                if rng.random() > 0.7:
+                    builder.add_allergy()
+
+                if rng.random() > 0.2:
+                    for _ in range(rng.randint(1, 4)):
+                        builder.add_immunization()
+
+                if rng.random() > 0.6:
+                    builder.add_procedure()
+
+                if rng.random() > 0.9:
+                    builder.add_medical_device()
+
+                if rng.random() > 0.3:
+                    for _ in range(rng.randint(1, 3)):
+                        builder.add_lab_result()
+
+                yield builder.build(), p_idx, r_idx
